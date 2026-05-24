@@ -46,7 +46,7 @@ model:
     use_num_updates: true
 
 data:
-  dataset_path: "archive/images/challengers"
+  dataset_path: "/kaggle/input/datasets/poseidon127/sd302a/archive/images/challengers"
   image_size: 512
   batch_size: 48              # 6 per TPU core × 8 cores
   pre_encode_batch_size: 2    # VQ-VAE encode batch; keep small to avoid OOM
@@ -70,7 +70,7 @@ paths:
   vqvae_ckpt: "models/fingerprint_ldm_rolled_512/model_ldm_rolled.ckpt"
   # Read-only dir with vqvae_params.npz + scale_factor.npy
   # On Kaggle: point to /kaggle/input/<dataset>/converted
-  converted_vqvae_dir: "jax_stage1/checkpoints/converted"
+  converted_vqvae_dir: "/kaggle/input/datasets/poseidon127/impose/kaggle_assets/converted"
   # Writable dir for UNet training checkpoints
-  output_dir: "jax_stage1/outputs"
-  checkpoint_dir: "jax_stage1/checkpoints"
+  output_dir: "/kaggle/working/jax_stage1/outputs"
+  checkpoint_dir: "/kaggle/working/jax_stage1/checkpoints"
