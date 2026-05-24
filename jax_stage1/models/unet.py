@@ -201,6 +201,7 @@ class ResBlock(nn.Module):
 
         # --- out_layers ---
         self.out_norm = nn.GroupNorm(num_groups=32, name="out_norm")
+        self.dropout_layer = nn.Dropout(rate=self.dropout, name="dropout")
         self.out_conv = nn.Conv(
             features=out_ch,
             kernel_size=(3, 3),
@@ -266,13 +267,13 @@ class ResBlock(nn.Module):
             scale, shift = jnp.split(emb_out, 2, axis=-1)
             h = self.out_norm(h) * (1.0 + scale) + shift
             h = nn.silu(h)
-            h = nn.Dropout(rate=self.dropout, deterministic=deterministic)(h)
+            h = self.dropout_layer(h, deterministic=deterministic)
             h = self.out_conv(h)
         else:
             h = h + emb_out
             h = self.out_norm(h)
             h = nn.silu(h)
-            h = nn.Dropout(rate=self.dropout, deterministic=deterministic)(h)
+            h = self.dropout_layer(h, deterministic=deterministic)
             h = self.out_conv(h)
 
         # --- skip_connection ---
