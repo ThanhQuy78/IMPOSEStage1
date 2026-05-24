@@ -1,0 +1,25 @@
+# IMPOSE Stage 1 — JAX/Flax/Optax
+# Rolled Fingerprint Latent Diffusion Model
+# ============================================================
+# Kaggle TPU v3-8 already has jax, jaxlib, flax, optax installed.
+# Only install the additional dependencies below.
+# ============================================================
+
+# Config
+pyyaml>=6.0
+
+# JAX ecosystem helpers. Do not pin jax/jaxlib here; use Kaggle's TPU runtime.
+flax>=0.8.0
+optax>=0.2.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Utilities
+numpy>=1.24.0
+tqdm>=4.65.0
+
+# PyTorch (CPU only, for one-time checkpoint conversion)
+# Uncomment only if you need to convert model_ldm_rolled.ckpt → npz:
+# --find-links https://download.pytorch.org/whl/cpu
+# torch>=2.0.0
