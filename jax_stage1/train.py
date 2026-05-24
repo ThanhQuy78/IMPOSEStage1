@@ -391,6 +391,11 @@ def main():
     image_size = config["data"]["image_size"]
     batch_size = config["data"]["batch_size"]
     latent_cache_path = config["data"].get("latent_cache_path")
+    if args.prepare_latents_only and not latent_cache_path:
+        raise ValueError(
+            "Set data.latent_cache_path before using --prepare_latents_only. "
+            "Example: latent_cache_path: '/kaggle/working/sd302a_rolled_latents.npy'"
+        )
     
     # Adjust batch size for number of devices
     per_device_batch = batch_size // num_devices
@@ -440,8 +445,6 @@ def main():
             latents = None
 
     if args.prepare_latents_only:
-        if not latent_cache_path:
-            raise ValueError("Set data.latent_cache_path before using --prepare_latents_only")
         print(f"Latent cache ready at: {latent_cache_path}")
         return
     
