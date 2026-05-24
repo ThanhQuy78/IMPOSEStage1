@@ -473,6 +473,7 @@ class UNetModel(nn.Module):
 
         for level, mult in enumerate(self.channel_mult):
             for _ in range(self.num_res_blocks):
+                current_block_idx = block_idx
                 layers: list[nn.Module] = [
                     ResBlock(
                         channels=ch,
@@ -480,7 +481,7 @@ class UNetModel(nn.Module):
                         dropout=self.dropout,
                         out_channels=mult * model_channels,
                         use_scale_shift_norm=self.use_scale_shift_norm,
-                        name=f"res",
+                        name=f"input_res_{current_block_idx}",
                     )
                 ]
                 ch = mult * model_channels
@@ -492,7 +493,7 @@ class UNetModel(nn.Module):
                         AttentionBlock(
                             channels=ch,
                             num_heads=num_heads,
-                            name="attn",
+                            name=f"input_attn_{current_block_idx}",
                         )
                     )
 
@@ -515,11 +516,11 @@ class UNetModel(nn.Module):
                         out_channels=ch,
                         use_scale_shift_norm=self.use_scale_shift_norm,
                         down=True,
-                        name="res_down",
+                        name=f"input_res_down_{block_idx}",
                     )
                 else:
                     down_layer = Downsample(
-                        channels=ch, use_conv=True, name="downsample"
+                        channels=ch, use_conv=True, name=f"input_downsample_{block_idx}"
                     )
                 input_blocks.append(
                     TimestepEmbedSequential(
@@ -570,6 +571,7 @@ class UNetModel(nn.Module):
 
         for level, mult in reversed(list(enumerate(self.channel_mult))):
             for i in range(self.num_res_blocks + 1):
+                current_block_idx = block_idx
                 ich = input_block_chans.pop()
                 layers = [
                     ResBlock(
@@ -578,7 +580,7 @@ class UNetModel(nn.Module):
                         dropout=self.dropout,
                         out_channels=model_channels * mult,
                         use_scale_shift_norm=self.use_scale_shift_norm,
-                        name="res",
+                        name=f"output_res_{current_block_idx}",
                     )
                 ]
                 ch = model_channels * mult
@@ -590,7 +592,7 @@ class UNetModel(nn.Module):
                         AttentionBlock(
                             channels=ch,
                             num_heads=num_heads,
-                            name="attn",
+                            name=f"output_attn_{current_block_idx}",
                         )
                     )
 
@@ -605,13 +607,13 @@ class UNetModel(nn.Module):
                                 out_channels=ch,
                                 use_scale_shift_norm=self.use_scale_shift_norm,
                                 up=True,
-                                name="res_up",
+                                name=f"output_res_up_{current_block_idx}",
                             )
                         )
                     else:
                         layers.append(
                             Upsample(
-                                channels=ch, use_conv=True, name="upsample"
+                                channels=ch, use_conv=True, name=f"output_upsample_{current_block_idx}"
                             )
                         )
                     ds //= 2

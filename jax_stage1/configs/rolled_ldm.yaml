@@ -50,6 +50,11 @@ data:
   image_size: 512
   batch_size: 48              # 6 per TPU core × 8 cores
   pre_encode_batch_size: 2    # VQ-VAE encode batch; keep small to avoid OOM
+  # Optional precomputed scaled latents, shape (N, 128, 128, 3), .npy.
+  # If this file exists, training skips image loading and VQ-VAE encoding.
+  # Example on Kaggle:
+  # latent_cache_path: "/kaggle/input/<latent-cache-dataset>/sd302a_rolled_latents.npy"
+  latent_cache_path: "/kaggle/input/datasets/poseidon127/impose/kaggle_assets/converted/sd302a_rolled_latents.npy"
   num_workers: 4
   shuffle_buffer: 4096
 

@@ -184,7 +184,7 @@ def compute_scale_factor(vqvae_params, vqvae_model, first_batch):
 # Pre-encode dataset 
 # ---------------------------------------------------------------------------
 def pre_encode_dataset(vqvae_params, vqvae_model, images, scale_factor,
-                       batch_size=32):
+                       batch_size=32, cache_path=None):
     """Pre-encode all training images to latent space.
     
     Since VQ-VAE is frozen, we can encode once and train on latents directly.
@@ -207,7 +207,19 @@ def pre_encode_dataset(vqvae_params, vqvae_model, images, scale_factor,
     latent_shape = test_z.shape[1:]  # (128, 128, 3)
     print(f"Latent shape: {latent_shape}")
     
-    latents = np.zeros((n, *latent_shape), dtype=np.float32)
+    if cache_path:
+        cache_dir = os.path.dirname(cache_path)
+        if cache_dir:
+            os.makedirs(cache_dir, exist_ok=True)
+        latents = np.lib.format.open_memmap(
+            cache_path,
+            mode="w+",
+            dtype=np.float32,
+            shape=(n, *latent_shape),
+        )
+        print(f"Writing latent cache to: {cache_path}")
+    else:
+        latents = np.zeros((n, *latent_shape), dtype=np.float32)
     
     @jax.jit
     def encode_batch(batch):
@@ -221,11 +233,25 @@ def pre_encode_dataset(vqvae_params, vqvae_model, images, scale_factor,
         batch = jnp.array(images[i:end])
         z = encode_batch(batch)
         latents[i:end] = np.array(z)
+        if cache_path:
+            latents.flush()
         if (i // batch_size) % 50 == 0:
             print(f"  Encoded {end}/{n}")
     
     print(f"Pre-encoding complete: {latents.shape}, {latents.nbytes / 1e9:.1f} GB")
     return latents
+
+
+def load_latent_cache(cache_path: str):
+    """Load precomputed scaled latents without reading source images."""
+    latents = np.load(cache_path, mmap_mode="r")
+    if latents.ndim != 4 or latents.shape[1:] != (128, 128, 3):
+        raise ValueError(
+            f"Invalid latent cache shape {latents.shape}; expected (N, 128, 128, 3)"
+        )
+    print(f"Loaded latent cache: {cache_path}")
+    print(f"Latents: {latents.shape}, {latents.nbytes / 1e9:.1f} GB")
+    return latents, len(latents)
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +327,8 @@ def main():
                         help="Pre-encode dataset to latent space (saves compute)")
     parser.add_argument("--no_pre_encode", dest="pre_encode", action="store_false",
                         help="Disable latent pre-encoding")
+    parser.add_argument("--prepare_latents_only", action="store_true",
+                        help="Build latent cache from images, then exit")
     args = parser.parse_args()
     
     # --- Load config ---
@@ -362,13 +390,19 @@ def main():
     dataset_path = config["data"]["dataset_path"]
     image_size = config["data"]["image_size"]
     batch_size = config["data"]["batch_size"]
+    latent_cache_path = config["data"].get("latent_cache_path")
     
     # Adjust batch size for number of devices
     per_device_batch = batch_size // num_devices
     batch_size = per_device_batch * num_devices
     print(f"Batch size: {batch_size} ({per_device_batch} per device × {num_devices} devices)")
     
-    images, num_images = create_numpy_dataset(dataset_path, image_size, batch_size)
+    latents = None
+    images = None
+    if args.pre_encode and latent_cache_path and os.path.exists(latent_cache_path):
+        latents, num_images = load_latent_cache(latent_cache_path)
+    else:
+        images, num_images = create_numpy_dataset(dataset_path, image_size, batch_size)
     steps_per_epoch = get_steps_per_epoch(num_images, batch_size)
     print(f"Steps per epoch: {steps_per_epoch}")
     
@@ -377,26 +411,39 @@ def main():
         if saved_scale_factor is not None:
             scale_factor = float(saved_scale_factor)
             print(f"Using saved scale_factor: {scale_factor}")
-        else:
+        elif images is not None:
             # Compute from first batch
             first_batch = jnp.array(images[:min(batch_size, 64)])
             scale_factor = compute_scale_factor(vqvae_params, vqvae_model, first_batch)
+        else:
+            raise ValueError(
+                "scale_by_std is enabled but no scale_factor.npy was loaded. "
+                "Provide scale_factor.npy with the converted VQ-VAE when using latent_cache_path."
+            )
     else:
         scale_factor = 1.0
     
     # --- Pre-encode dataset ---
-    if args.pre_encode:
+    if args.pre_encode and latents is None:
         print("\n=== Pre-encoding dataset to latent space ===")
         enc_bs = config["data"].get("pre_encode_batch_size", 2)
         print(f"  VQ-VAE encode batch size: {enc_bs}")
         latents = pre_encode_dataset(
             vqvae_params, vqvae_model, images, scale_factor,
             batch_size=enc_bs,
+            cache_path=latent_cache_path,
         )
         # Free original images
         del images
     else:
-        latents = None
+        if not args.pre_encode:
+            latents = None
+
+    if args.prepare_latents_only:
+        if not latent_cache_path:
+            raise ValueError("Set data.latent_cache_path before using --prepare_latents_only")
+        print(f"Latent cache ready at: {latent_cache_path}")
+        return
     
     # --- Initialize UNet ---
     print("\n=== Initializing UNet ===")

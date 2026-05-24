@@ -22,11 +22,11 @@ from jax import random
 from PIL import Image
 
 # Local imports
-from models.vqvae import VQModelInterface
-from models.unet import UNetModel
-from diffusion.schedule import make_beta_schedule, compute_schedule_constants
-from diffusion.ddim import make_ddim_timesteps, make_ddim_schedule, ddim_sample_loop
-from utils.checkpoint_converter import (
+from IMPOSEStage1.jax_stage1.models.vqvae import VQModelInterface
+from IMPOSEStage1.jax_stage1.models.unet import UNetModel
+from IMPOSEStage1.jax_stage1.diffusion.schedule import make_beta_schedule, compute_schedule_constants
+from IMPOSEStage1.jax_stage1.diffusion.ddim import make_ddim_timesteps, make_ddim_schedule, ddim_sample_loop
+from IMPOSEStage1.jax_stage1.utils.checkpoint_converter import (
     convert_checkpoint,
     is_valid_vqvae_param_tree,
     load_converted_params,
@@ -55,7 +55,7 @@ def load_unet_checkpoint(ckpt_dir: str) -> dict:
             ema_params[key] = jnp.array(v)
     
     # Unflatten
-    from utils.checkpoint_converter import _unflatten_dict
+    from IMPOSEStage1.jax_stage1.utils.checkpoint_converter import _unflatten_dict
     params = _unflatten_dict(ema_params)
     
     return params, step
