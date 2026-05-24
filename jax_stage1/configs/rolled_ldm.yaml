@@ -54,7 +54,7 @@ data:
   # If this file exists, training skips image loading and VQ-VAE encoding.
   # Example on Kaggle:
   # latent_cache_path: "/kaggle/input/<latent-cache-dataset>/sd302a_rolled_latents.npy"
-  latent_cache_path: "/kaggle/input/datasets/poseidon127/impose/kaggle_assets/converted/sd302a_rolled_latents.npy"
+  latent_cache_path: null
   num_workers: 4
   shuffle_buffer: 4096
 
