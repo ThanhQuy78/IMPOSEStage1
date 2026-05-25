@@ -22,11 +22,11 @@ from jax import random
 from PIL import Image
 
 # Local imports
-from IMPOSEStage1.jax_stage1.models.vqvae import VQModelInterface
-from IMPOSEStage1.jax_stage1.models.unet import UNetModel
-from IMPOSEStage1.jax_stage1.diffusion.schedule import make_beta_schedule, compute_schedule_constants
-from IMPOSEStage1.jax_stage1.diffusion.ddim import make_ddim_timesteps, make_ddim_schedule, ddim_sample_loop
-from IMPOSEStage1.jax_stage1.utils.checkpoint_converter import (
+from jax_stage1.models.vqvae import VQModelInterface
+from jax_stage1.models.unet import UNetModel
+from jax_stage1.diffusion.schedule import make_beta_schedule, compute_schedule_constants
+from jax_stage1.diffusion.ddim import make_ddim_timesteps, make_ddim_schedule, ddim_sample_loop
+from jax_stage1.utils.checkpoint_converter import (
     convert_checkpoint,
     is_valid_vqvae_param_tree,
     load_converted_params,
