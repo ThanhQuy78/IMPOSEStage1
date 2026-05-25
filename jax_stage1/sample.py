@@ -55,7 +55,7 @@ def load_unet_checkpoint(ckpt_dir: str) -> dict:
             ema_params[key] = jnp.array(v)
     
     # Unflatten
-    from IMPOSEStage1.jax_stage1.utils.checkpoint_converter import _unflatten_dict
+    from utils.checkpoint_converter import _unflatten_dict
     params = _unflatten_dict(ema_params)
     
     return params, step
